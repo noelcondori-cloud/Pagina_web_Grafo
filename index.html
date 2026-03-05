@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+<meta charset="UTF-8">
+<title>Práctica de Grafos Dirigidos</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+
+body{
+margin:0;
+font-family:Segoe UI;
+background:#1f2937;
+color:white;
+overflow:hidden;
+}
+
+header{
+background:#111827;
+padding:14px;
+text-align:center;
+font-size:22px;
+}
+
+#menu{
+background:#374151;
+padding:10px;
+display:flex;
+gap:8px;
+}
+
+button{
+background:#3b82f6;
+border:none;
+padding:8px 14px;
+color:white;
+border-radius:6px;
+cursor:pointer;
+}
+
+button:hover{
+background:#2563eb;
+}
+
+#canvas{
+background:#0b3d2e;
+border:3px solid #22c55e;
+margin:10px;
+}
+
+#panel{
+position:absolute;
+right:20px;
+top:120px;
+width:320px;
+padding:10px;
+background:#111827;
+border:2px solid #22c55e;
+border-radius:8px;
+cursor:grab;
+user-select:none;
+}
+
+table{
+border-collapse:collapse;
+margin-top:10px;
+}
+
+td,th{
+border:1px solid #94a3b8;
+padding:6px 10px;
+text-align:center;
+}
+
+th{
+background:#475569;
+}
+
+#barraMatriz{
+cursor:grab;
+background:#065f46;
+padding:6px;
+border-radius:4px;
+text-align:center;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>Práctica de Grafos Dirigidos</header>
+
+<div id="menu">
+
+<button onclick="modo='crear'">Crear Nodo</button>
+<button onclick="modo='editar'">Editar Nodo</button>
+<button onclick="modo='eliminar'">Eliminar Nodo</button>
+<button onclick="modo='conectar'">Conectar</button>
+<button onclick="generarMatriz()">Generar Matriz</button>
+<button onclick="exportarPDF()">Guardar PDF</button>
+
+</div>
+
+<canvas id="canvas" width="900" height="520"></canvas>
+
+<div id="panel">
+
+<h3 id="barraMatriz">Matriz de Adyacencia</h3>
+
+<div id="matriz"></div>
+
+<h3>Conclusión</h3>
+
+<div id="conclusion"></div>
+
+</div>
+
+<script>
+
+const canvas=document.getElementById("canvas")
+const ctx=canvas.getContext("2d")
+
+let nodos=[]
+let aristas=[]
+let modo="crear"
+
+let nodoSel=null
+let nodoDrag=null
+
+class Nodo{
+
+constructor(x,y,nombre){
+this.x=x
+this.y=y
+this.nombre=nombre
+this.r=26
+}
+
+}
+
+class Arista{
+
+constructor(o,d,p){
+this.origen=o
+this.destino=d
+this.peso=p
+}
+
+}
+
+canvas.addEventListener("dblclick",e=>{
+
+if(modo!="crear")return
+
+let nombre=prompt("Nombre del nodo")
+
+if(!nombre)return
+
+let rect=canvas.getBoundingClientRect()
+
+let x=e.clientX-rect.left
+let y=e.clientY-rect.top
+
+nodos.push(new Nodo(x,y,nombre))
+
+dibujar()
+
+})
+
+canvas.addEventListener("mousedown",e=>{
+
+let rect=canvas.getBoundingClientRect()
+
+let x=e.clientX-rect.left
+let y=e.clientY-rect.top
+
+for(let n of nodos){
+
+if(Math.hypot(x-n.x,y-n.y)<n.r){
+
+if(modo=="editar"){
+
+let nuevo=prompt("Nuevo nombre",n.nombre)
+
+if(nuevo)n.nombre=nuevo
+
+}
+
+else if(modo=="eliminar"){
+
+nodos=nodos.filter(a=>a!=n)
+aristas=aristas.filter(a=>a.origen!=n && a.destino!=n)
+
+}
+
+else if(modo=="conectar"){
+
+if(!nodoSel){
+
+nodoSel=n
+
+}else{
+
+let peso=prompt("Peso")
+
+if(peso){
+
+aristas.push(new Arista(nodoSel,n,Number(peso)))
+
+}
+
+nodoSel=null
+
+}
+
+}
+
+else{
+
+nodoDrag=n
+
+}
+
+}
+
+}
+
+dibujar()
+
+})
+
+canvas.addEventListener("mousemove",e=>{
+
+if(!nodoDrag)return
+
+let rect=canvas.getBoundingClientRect()
+
+nodoDrag.x=e.clientX-rect.left
+nodoDrag.y=e.clientY-rect.top
+
+dibujar()
+
+})
+
+canvas.addEventListener("mouseup",()=>{
+
+nodoDrag=null
+
+})
+
+canvas.addEventListener("click",e=>{
+
+let rect=canvas.getBoundingClientRect()
+
+let x=e.clientX-rect.left
+let y=e.clientY-rect.top
+
+for(let a of aristas){
+
+let mx=(a.origen.x+a.destino.x)/2
+let my=(a.origen.y+a.destino.y)/2
+
+if(Math.hypot(x-mx,y-my)<15){
+
+let nuevo=prompt("Editar peso",a.peso)
+
+if(nuevo)a.peso=Number(nuevo)
+
+dibujar()
+
+}
+
+}
+
+})
+
+function dibujar(){
+
+ctx.clearRect(0,0,canvas.width,canvas.height)
+
+ctx.strokeStyle="white"
+ctx.fillStyle="white"
+ctx.font="14px Arial"
+
+for(let a of aristas){
+
+let x1=a.origen.x
+let y1=a.origen.y
+let x2=a.destino.x
+let y2=a.destino.y
+
+if(a.origen==a.destino){
+
+ctx.beginPath()
+ctx.arc(x1,y1-45,20,0,Math.PI*2)
+ctx.stroke()
+
+ctx.fillText(a.peso,x1,y1-65)
+
+}else{
+
+let curva=0
+
+for(let b of aristas){
+
+if(b.origen==a.destino && b.destino==a.origen)
+curva=30
+
+}
+
+let mx=(x1+x2)/2
+let my=(y1+y2)/2-curva
+
+ctx.beginPath()
+ctx.moveTo(x1,y1)
+ctx.quadraticCurveTo(mx,my,x2,y2)
+ctx.stroke()
+
+let angle=Math.atan2(y2-my,x2-mx)
+
+let arrow=12
+
+ctx.beginPath()
+
+ctx.moveTo(x2,y2)
+
+ctx.lineTo(
+x2-arrow*Math.cos(angle-Math.PI/6),
+y2-arrow*Math.sin(angle-Math.PI/6)
+)
+
+ctx.lineTo(
+x2-arrow*Math.cos(angle+Math.PI/6),
+y2-arrow*Math.sin(angle+Math.PI/6)
+)
+
+ctx.closePath()
+ctx.fill()
+
+ctx.fillText(a.peso,mx,my)
+
+}
+
+}
+
+for(let n of nodos){
+
+ctx.beginPath()
+
+ctx.fillStyle="#22c55e"
+
+ctx.arc(n.x,n.y,n.r,0,Math.PI*2)
+
+ctx.fill()
+
+ctx.fillStyle="black"
+
+ctx.textAlign="center"
+ctx.textBaseline="middle"
+
+ctx.font="bold 15px Arial"
+
+ctx.fillText(n.nombre,n.x,n.y)
+
+}
+
+}
+
+function generarMatriz(){
+
+let n=nodos.length
+
+let m=Array.from({length:n},()=>Array(n).fill(0))
+
+for(let a of aristas){
+
+let i=nodos.indexOf(a.origen)
+let j=nodos.indexOf(a.destino)
+
+m[i][j]=a.peso
+
+}
+
+let html="<table><tr><th></th>"
+
+nodos.forEach(n=>html+="<th>"+n.nombre+"</th>")
+
+html+="</tr>"
+
+for(let i=0;i<n;i++){
+
+html+="<tr><th>"+nodos[i].nombre+"</th>"
+
+for(let j=0;j<n;j++){
+
+html+="<td>"+m[i][j]+"</td>"
+
+}
+
+html+="</tr>"
+
+}
+
+html+="</table>"
+
+document.getElementById("matriz").innerHTML=html
+
+generarConclusion(m)
+
+}
+
+function generarConclusion(m){
+
+let texto=""
+
+nodos.forEach((n,i)=>{
+
+let conexiones=m[i].some(v=>v!=0)
+
+if(!conexiones)
+texto+="Nodo "+n.nombre+" no tiene conexiones.<br>"
+
+if(m[i][i]!=0)
+texto+="Nodo "+n.nombre+" tiene un bucle.<br>"
+
+})
+
+document.getElementById("conclusion").innerHTML=texto
+
+}
+
+function exportarPDF(){
+
+const { jsPDF } = window.jspdf
+
+let nombre=prompt("Nombre del archivo","grafo")
+
+if(!nombre)nombre="grafo"
+
+let pdf=new jsPDF()
+
+pdf.setFontSize(18)
+pdf.text("Grafo y Matriz de Adyacencia",20,20)
+
+let img=canvas.toDataURL("image/png")
+
+pdf.addImage(img,"PNG",15,30,180,100)
+
+let matriz=document.getElementById("matriz").innerText
+
+pdf.setFontSize(12)
+
+pdf.text("Matriz:",20,140)
+
+let lineas=pdf.splitTextToSize(matriz,180)
+
+pdf.text(lineas,20,150)
+
+pdf.save(nombre+".pdf")
+
+}
+
+dibujar()
+
+/* ARRASTRAR MATRIZ */
+
+let panel=document.getElementById("panel")
+let barra=document.getElementById("barraMatriz")
+
+let arrastrando=false
+let offsetX=0
+let offsetY=0
+
+barra.addEventListener("mousedown",e=>{
+
+arrastrando=true
+
+offsetX=e.clientX-panel.offsetLeft
+offsetY=e.clientY-panel.offsetTop
+
+panel.style.cursor="grabbing"
+
+})
+
+document.addEventListener("mousemove",e=>{
+
+if(!arrastrando)return
+
+panel.style.left=(e.clientX-offsetX)+"px"
+panel.style.top=(e.clientY-offsetY)+"px"
+
+})
+
+document.addEventListener("mouseup",()=>{
+
+arrastrando=false
+
+panel.style.cursor="grab"
+
+})
+
+</script>
+
+</body>
+</html>
