@@ -108,9 +108,36 @@ Dirigido
 
 <div id="reporte">
 
-<canvas id="canvas" width="900" height="450"></canvas>
+<div style="display:flex; gap:15px; align-items:flex-start">
+
+<canvas id="canvas" width="700" height="450"></canvas>
+
+<div style="width:250px;background:#134444;padding:15px;border-radius:10px;font-size:14px;height:450px;overflow:auto">
+
+<h3>Guía de uso</h3>
+
+<ul style="line-height:1.6;padding-left:15px">
+
+<li><b>Crear vértice:</b> agrega un nodo.</li>
+<li><b>Unir vértices:</b> haz clic en dos nodos.</li>
+<li><b>Peso:</b> asigna valor a la conexión.</li>
+<li><b>Click derecho nodo:</b> editar o eliminar.</li>
+<li><b>Click derecho arista:</b> cambiar peso.</li>
+<li><b>Arrastrar nodo:</b> moverlo con el mouse.</li>
+<li><b>Dirigido:</b> activa flechas.</li>
+<li><b>Exportar JSON:</b> guardar grafo.</li>
+<li><b>Importar JSON:</b> cargar grafo.</li>
+<li><b>Descargar PDF:</b> generar reporte.</li>
+
+</ul>
+
+</div>
+
+</div>
 
 <div class="panel">
+
+<div style="flex:2">
 
 <div>
 <h3>Matriz de Adyacencia</h3>
@@ -123,6 +150,7 @@ Dirigido
 </div>
 
 </div>
+
 
 <div class="modal" id="modal">
 <div class="modal-content">
@@ -331,7 +359,21 @@ ctx.strokeStyle="#e8d8b0"
 ctx.stroke()
 
 ctx.fillStyle="white"
-ctx.fillText(n.label,n.x,n.y+4)
+ctx.textAlign="center"
+ctx.textBaseline="middle"
+
+// tamaño máximo de letra
+let fontSize = 14
+ctx.font = "bold " + fontSize + "px Arial"
+
+// reducir tamaño si el texto es muy largo
+while(ctx.measureText(n.label).width > 30){
+fontSize--
+ctx.font = "bold " + fontSize + "px Arial"
+}
+
+// dibujar texto centrado
+ctx.fillText(n.label,n.x,n.y)
 
 })
 
@@ -830,3 +872,4 @@ dibujar()
 
 </body>
 </html>
+
